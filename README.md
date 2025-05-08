@@ -1,1 +1,1 @@
-# Ajedrez-La-Rebeli-n-
+# Ajedrez-La-Rebelion
