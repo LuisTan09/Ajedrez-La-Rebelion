@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajedrez 3D con Animaciones</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #111;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+    }
+    #mensaje-captura {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.1);
+      color: #0ff;
+      font-size: 24px;
+      padding: 10px 20px;
+      border: 2px solid #0ff;
+      border-radius: 10px;
+      display: none;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div id="mensaje-captura">¡Captura estratégica!</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r150/three.min.js"></script>
+  <script>
+    let scene, camera, renderer, pieza, torre, caballo;
+
+    const container = document.getElementById('canvas-container');
+    const mensajeCaptura = document.getElementById('mensaje-captura');
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      camera.position.z = 5;
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
+
+      const light = new THREE.PointLight(0xffffff, 1);
+      light.position.set(5, 5, 5);
+      scene.add(light);
+
+      const geometriaPieza = new THREE.SphereGeometry(0.5, 32, 32);
+      const materialPieza = new THREE.MeshStandardMaterial({ color: 0xff00ff });
+      pieza = new THREE.Mesh(geometriaPieza, materialPieza);
+      pieza.position.set(-2, 0, 0);
+      scene.add(pieza);
+
+      const geometriaCaballo = new THREE.ConeGeometry(0.3, 1, 32);
+      const materialCaballo = new THREE.MeshStandardMaterial({ color: 0x00ffff });
+      caballo = new THREE.Mesh(geometriaCaballo, materialCaballo);
+      caballo.rotation.x = Math.PI / 2;
+      caballo.position.set(2, 0, 0);
+      scene.add(caballo);
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    // Simular animaciones:
+    function animarCaptura(piezaCapturada) {
+      const duration = 1000;
+      const start = performance.now();
+      const startScale = piezaCapturada.scale.clone();
+      const endScale = new THREE.Vector3(0.1, 0.1, 0.1);
+
+      mensajeCaptura.style.display = 'block';
+      setTimeout(() => mensajeCaptura.style.display = 'none', 1200);
+
+      function shrink(time) {
+        const elapsed = time - start;
+        const t = Math.min(elapsed / duration, 1);
+        piezaCapturada.scale.lerpVectors(startScale, endScale, t);
+        if (t < 1) requestAnimationFrame(shrink);
+        else scene.remove(piezaCapturada);
+      }
+      requestAnimationFrame(shrink);
+    }
+
+    function animarCaballo() {
+      let start = null;
+      const duracion = 1000;
+      const amplitud = 0.2;
+      const frecuencia = 10;
+
+      function trotarCaballo(tiempo) {
+        if (!start) start = tiempo;
+        const progreso = (tiempo - start) / duracion;
+        caballo.position.y = Math.sin(progreso * frecuencia * Math.PI) * amplitud;
+        caballo.position.x = 2 - progreso * 4;
+
+        if (progreso < 1) requestAnimationFrame(trotarCaballo);
+        else caballo.position.y = 0;
+      }
+
+      requestAnimationFrame(trotarCaballo);
+    }
+
+    // Iniciar
+    init();
+
+    // Simulaciones: ejecutar después de unos segundos
+    setTimeout(() => {
+      animarCaballo();
+    }, 1000);
+
+    setTimeout(() => {
+      animarCaptura(pieza);
+    }, 3000);
+  </script>
+</body>
+</html>
