@@ -69,28 +69,32 @@
       ground.rotation.x = -Math.PI / 2;
       scene.add(ground);
 
-      cargarModelos();
+      cargarPiezas();
     }
 
-    function cargarModelos() {
+    function cargarPiezas() {
       const loader = new THREE.GLTFLoader();
 
-      loader.load('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/ChessSet/glTF/ChessSet.gltf', function(gltf) {
-        const modelo = gltf.scene;
-        modelo.scale.set(0.3, 0.3, 0.3);
-
-        // Torre
-        torre = modelo.clone();
-        torre.position.set(0, 0, -3);
-        scene.add(torre);
-
-        // Caballo
-        caballo = modelo.clone();
+      // Caballo
+      loader.load('https://raw.githubusercontent.com/nidorx/misc-assets/main/chess/knight_black.glb', function(gltf) {
+        caballo = gltf.scene;
+        caballo.scale.set(2, 2, 2);
         caballo.position.set(3, 0, 0);
         scene.add(caballo);
+      });
 
-        // Pieza capturada
-        piezaCapturada = modelo.clone();
+      // Torre
+      loader.load('https://raw.githubusercontent.com/nidorx/misc-assets/main/chess/rook_white.glb', function(gltf) {
+        torre = gltf.scene;
+        torre.scale.set(2, 2, 2);
+        torre.position.set(0, 0, -3);
+        scene.add(torre);
+      });
+
+      // Pieza capturada
+      loader.load('https://raw.githubusercontent.com/nidorx/misc-assets/main/chess/queen_black.glb', function(gltf) {
+        piezaCapturada = gltf.scene;
+        piezaCapturada.scale.set(2, 2, 2);
         piezaCapturada.position.set(-3, 0, 0);
         scene.add(piezaCapturada);
 
