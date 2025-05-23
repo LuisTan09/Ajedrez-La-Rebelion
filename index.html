@@ -32,71 +32,129 @@
 <body>
   <div id="canvas-container"></div>
   <div id="mensaje-captura">¡Captura estratégica!</div>
+  <audio id="audio-captura" src="https://cdn.pixabay.com/audio/2022/03/15/audio_5ff57e3f54.mp3"></audio>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r150/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/examples/js/loaders/GLTFLoader.js"></script>
   <script>
     let scene, camera, renderer;
-    let pieza, torre, caballo;
-
+    let caballo, torre, piezaCapturada;
     const container = document.getElementById('canvas-container');
     const mensajeCaptura = document.getElementById('mensaje-captura');
+    const sonidoCaptura = document.getElementById('audio-captura');
 
     function init() {
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x222222);  // fondo más claro
+      scene.background = new THREE.Color(0x222222);
 
-      // Cámara más cerca y mejor ángulo
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 5, 7);
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      camera.position.set(4, 6, 8);
       camera.lookAt(0, 0, 0);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(renderer.domElement);
 
-      // Luz ambiente más fuerte
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambientLight);
 
-      // Luz principal más brillante
-      const pointLight = new THREE.PointLight(0xffffff, 1.5);
+      const pointLight = new THREE.PointLight(0xffffff, 1);
       pointLight.position.set(5, 10, 5);
       scene.add(pointLight);
 
-      // Base
       const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(10, 10),
-        new THREE.MeshStandardMaterial({ color: 0x444444 })
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.MeshStandardMaterial({ color: 0x333333 })
       );
       ground.rotation.x = -Math.PI / 2;
       scene.add(ground);
 
-      // Pieza objetivo a capturar
-      pieza = new THREE.Mesh(
-        new THREE.SphereGeometry(0.5, 32, 32),
-        new THREE.MeshStandardMaterial({ color: 0xff00ff })
-      );
-      pieza.position.set(0, 0.5, 0);
-      scene.add(pieza);
+      cargarModelos();
+    }
 
-      // Caballo
-      caballo = new THREE.Mesh(
-        new THREE.ConeGeometry(0.3, 1, 32),
-        new THREE.MeshStandardMaterial({ color: 0x00ffff })
-      );
-      caballo.rotation.x = Math.PI / 2;
-      caballo.position.set(3, 0.5, 0);
-      scene.add(caballo);
+    function cargarModelos() {
+      const loader = new THREE.GLTFLoader();
 
-      // Torre
-      torre = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.3, 1, 32),
-        new THREE.MeshStandardMaterial({ color: 0xffff00 })
-      );
-      torre.position.set(-3, 0.5, 0);
-      scene.add(torre);
+      loader.load('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/ChessSet/glTF/ChessSet.gltf', function(gltf) {
+        const modelo = gltf.scene;
+        modelo.scale.set(0.3, 0.3, 0.3);
 
-      animate();
+        // Torre
+        torre = modelo.clone();
+        torre.position.set(0, 0, -3);
+        scene.add(torre);
+
+        // Caballo
+        caballo = modelo.clone();
+        caballo.position.set(3, 0, 0);
+        scene.add(caballo);
+
+        // Pieza capturada
+        piezaCapturada = modelo.clone();
+        piezaCapturada.position.set(-3, 0, 0);
+        scene.add(piezaCapturada);
+
+        iniciarAnimaciones();
+      });
+    }
+
+    function iniciarAnimaciones() {
+      setTimeout(animarCaballo, 1000);
+      setTimeout(animarTorre, 3000);
+      setTimeout(() => animarCaptura(piezaCapturada), 5000);
+    }
+
+    function animarCaballo() {
+      let start = null;
+      const duracion = 1500;
+
+      function mover(tiempo) {
+        if (!start) start = tiempo;
+        const progreso = (tiempo - start) / duracion;
+        caballo.position.x = 3 - progreso * 6;
+        caballo.position.y = Math.sin(progreso * 10 * Math.PI) * 0.5;
+
+        if (progreso < 1) requestAnimationFrame(mover);
+        else caballo.position.y = 0;
+      }
+
+      requestAnimationFrame(mover);
+    }
+
+    function animarTorre() {
+      let start = null;
+      const duracion = 1000;
+
+      function mover(tiempo) {
+        if (!start) start = tiempo;
+        const progreso = (tiempo - start) / duracion;
+        torre.position.z = -3 + progreso * 6;
+
+        if (progreso < 1) requestAnimationFrame(mover);
+      }
+
+      requestAnimationFrame(mover);
+    }
+
+    function animarCaptura(pieza) {
+      const duracion = 1000;
+      const inicio = performance.now();
+      const escalaInicial = pieza.scale.clone();
+      const escalaFinal = new THREE.Vector3(0.1, 0.1, 0.1);
+
+      mensajeCaptura.style.display = 'block';
+      sonidoCaptura.play();
+      setTimeout(() => mensajeCaptura.style.display = 'none', 1200);
+
+      function encoger(tiempo) {
+        const transcurrido = tiempo - inicio;
+        const t = Math.min(transcurrido / duracion, 1);
+        pieza.scale.lerpVectors(escalaInicial, escalaFinal, t);
+        if (t < 1) requestAnimationFrame(encoger);
+        else scene.remove(pieza);
+      }
+
+      requestAnimationFrame(encoger);
     }
 
     function animate() {
@@ -104,66 +162,8 @@
       renderer.render(scene, camera);
     }
 
-    function animarCaptura(piezaCapturada) {
-      const duration = 1000;
-      const start = performance.now();
-      const startScale = piezaCapturada.scale.clone();
-      const endScale = new THREE.Vector3(0.1, 0.1, 0.1);
-
-      mensajeCaptura.style.display = 'block';
-      setTimeout(() => mensajeCaptura.style.display = 'none', 1200);
-
-      function shrink(time) {
-        const elapsed = time - start;
-        const t = Math.min(elapsed / duration, 1);
-        piezaCapturada.scale.lerpVectors(startScale, endScale, t);
-        if (t < 1) requestAnimationFrame(shrink);
-        else scene.remove(piezaCapturada);
-      }
-      requestAnimationFrame(shrink);
-    }
-
-    function animarCaballo() {
-      let start = null;
-      const duracion = 1000;
-      const amplitud = 0.3;
-      const frecuencia = 10;
-
-      function trotarCaballo(tiempo) {
-        if (!start) start = tiempo;
-        const progreso = (tiempo - start) / duracion;
-        caballo.position.y = 0.5 + Math.sin(progreso * frecuencia * Math.PI) * amplitud;
-        caballo.position.x = 3 - progreso * 3;
-
-        if (progreso < 1) requestAnimationFrame(trotarCaballo);
-        else caballo.position.y = 0.5;
-      }
-
-      requestAnimationFrame(trotarCaballo);
-    }
-
-    function animarTorre() {
-      let start = null;
-      const duracion = 800;
-
-      function deslizarTorre(tiempo) {
-        if (!start) start = tiempo;
-        const progreso = (tiempo - start) / duracion;
-        torre.position.x = -3 + progreso * 3;
-
-        if (progreso < 1) requestAnimationFrame(deslizarTorre);
-      }
-
-      requestAnimationFrame(deslizarTorre);
-    }
-
-    // Iniciar
     init();
-
-    // Secuencia
-    setTimeout(animarCaballo, 1000);
-    setTimeout(animarTorre, 2500);
-    setTimeout(() => animarCaptura(pieza), 4000);
+    animate();
   </script>
 </body>
 </html>
